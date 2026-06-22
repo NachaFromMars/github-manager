@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.0 — 2026-06-22 — Public Trust Docs
+
+### Added
+- Expanded `SECURITY.md`: token handling, leak response, PAT rotation, reporting.
+- `CONTRIBUTING.md`: fork/branch/commit flow, pre-PR testing, commit conventions, safety-guard rules.
+- `docs/commands.md`: full CLI reference with parameters and examples.
+- `docs/token-setup.md`: minimum PAT permissions and 401/403/404/422/rate-limit guidance.
+- `docs/openclaw-integration.md`: skill install, triggers, and agent publish workflow.
+- `docs/troubleshooting.md`: common API errors and fixes.
+
+### Notes
+- Documentation-focused trust release. No change to safety defaults; `publish`/`push --method api` remain recommended.
+
 ## v0.2.3 — 2026-06-22
 
 ### Fixed
