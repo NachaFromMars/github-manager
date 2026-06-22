@@ -16,7 +16,7 @@ Thứ tự tìm token:
 Quy tắc:
 - KHÔNG in token ra chat/log.
 - Token nên là fine-grained PAT với quyền: Administration (tạo repo), Contents (push), Workflows (Actions), Issues/Pull requests (tùy chọn). Repository access: All repositories hoặc chọn repo cụ thể.
-- Khi push: script tự nhúng token vào remote URL tạm rồi SCRUB sau push (không lưu token vào git config).
+- Ưu tiên `publish` hoặc `push --method api` vì dùng GitHub Contents API. `push --method git` là legacy/riskier: tạm nhúng token vào remote URL rồi scrub sau push.
 
 ## Lệnh chính
 
@@ -61,3 +61,45 @@ python3 $S delete-repo --repo OWNER/NAME --confirm OWNER/NAME   # guarded: confi
 python3 <skill-dir>/scripts/gh_manager.py publish --path <dir> --repo OWNER/NAME --create --desc "..." --topics "openclaw,ai-agent,automation" --tag vX.Y.Z --notes "..."
 ```
 Một lệnh: tạo repo (nếu cần) -> push file qua Contents API -> set description -> set topics -> tạo release. Token không in ra chat.
+
+## Recommended path: publish first
+
+For normal repo shipping, prefer `publish` over legacy git push:
+
+```bash
+python3 $S publish --path <dir> --repo OWNER/NAME --create --desc "..." --topics "openclaw,ai-agent,automation" --tag vX.Y.Z --notes "..."
+```
+
+`publish` uses the GitHub Contents API, then sets description/topics/homepage and optional release metadata.
+
+## Push modes
+
+```bash
+python3 $S push --path <dir> --repo OWNER/NAME --create --method api   # default, recommended
+python3 $S push --path <dir> --repo OWNER/NAME --method git            # legacy/riskier fallback
+```
+
+`--method git` temporarily embeds the token in the git remote URL before scrubbing it. Use only when API publishing is insufficient.
+
+## Repo metadata
+
+```bash
+python3 $S update-repo --repo OWNER/NAME --desc "..." --topics "openclaw,ai-agent,automation" --homepage "https://github.com/OWNER/NAME" --note "local reminder"
+```
+
+Public on GitHub: `--desc`, `--topics`, `--homepage`, `--private`.
+
+Local-only: `--note` is stored only in `~/.config/tt-github/repos.json`; it is not sent to GitHub and does not appear publicly.
+
+## My Repo Library
+
+```bash
+python3 $S library-list
+python3 $S library-list --query github
+python3 $S library-add --repo OWNER/NAME --desc "..." --topics "openclaw,automation" --note "local reminder"
+python3 $S library-remove --repo OWNER/NAME
+```
+
+Library path: `~/.config/tt-github/repos.json`.
+
+Auto-sync commands: `create-repo`, `push`, `publish`, `update-repo`, successful `repo-info`.
