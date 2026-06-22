@@ -55,3 +55,9 @@ python3 $S delete-repo --repo OWNER/NAME --confirm OWNER/NAME   # guarded: confi
 ## Files
 - `scripts/gh_manager.py` — CLI REST API (whoami/list/create/push/issue/release/delete)
 - `references/setup-pat.md` — hướng dẫn tạo + cấp quyền PAT đúng
+
+## Auto polish (publish)
+```bash
+python3 <skill-dir>/scripts/gh_manager.py publish --path <dir> --repo OWNER/NAME --create --desc "..." --topics "openclaw,ai-agent,automation" --tag vX.Y.Z --notes "..."
+```
+Một lệnh: tạo repo (nếu cần) -> push file qua Contents API -> set description -> set topics -> tạo release. Token không in ra chat.
