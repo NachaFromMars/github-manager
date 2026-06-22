@@ -17,6 +17,11 @@ Subcommands:
   list-issues --repo OWNER/NAME [--state open|closed|all]
   create-release --repo OWNER/NAME --tag vX --name N [--notes ..]
   update-repo --repo OWNER/NAME [--desc D] [--topics a,b] [--homepage URL]
+  create-branch --repo OWNER/NAME --name BRANCH [--base BASE]
+  open-pr --repo OWNER/NAME --head BRANCH --title T [--base BASE] [--body B] [--draft]
+  list-prs --repo OWNER/NAME [--state open|closed|all]
+  comment-issue --repo OWNER/NAME --number N --body B
+  merge-pr --repo OWNER/NAME --number N --confirm REPO#NUMBER [--method merge|squash|rebase]
   library-list [--query Q] [--limit N]
   library-add --repo OWNER/NAME [--url URL] [--desc D] [--topics a,b] [--note N]
   library-remove --repo OWNER/NAME
@@ -341,6 +346,49 @@ def cmd_create_release(a, t):
     out({"status": s, "url": d.get("html_url"), "error": d.get("message")})
 
 
+def _default_branch(repo, t):
+    s, d = api("GET", f"/repos/{repo}", t)
+    if s == 200 and isinstance(d, dict):
+        return d.get("default_branch") or "main"
+    return "main"
+
+def cmd_create_branch(a, t):
+    base = a.base or _default_branch(a.repo, t)
+    s, d = api("GET", f"/repos/{a.repo}/git/ref/heads/{base}", t)
+    if s >= 400 or not isinstance(d, dict):
+        out({"status": s, "error": (d.get("message") if isinstance(d, dict) else d), "hint": "base branch not found"}); return
+    sha = d.get("object", {}).get("sha")
+    cs, cd = api("POST", f"/repos/{a.repo}/git/refs", t, {"ref": f"refs/heads/{a.name}", "sha": sha})
+    out({"status": cs, "branch": a.name, "base": base, "ref": cd.get("ref"), "error": cd.get("message")})
+
+def cmd_open_pr(a, t):
+    base = a.base or _default_branch(a.repo, t)
+    body = {"title": a.title, "head": a.head, "base": base, "body": a.body or ""}
+    if a.draft:
+        body["draft"] = True
+    s, d = api("POST", f"/repos/{a.repo}/pulls", t, body)
+    out({"status": s, "number": d.get("number"), "url": d.get("html_url"), "state": d.get("state"), "draft": d.get("draft"), "error": d.get("message")})
+
+def cmd_list_prs(a, t):
+    s, d = api("GET", f"/repos/{a.repo}/pulls?state={a.state}&per_page=30", t)
+    if isinstance(d, list):
+        out([{"number": pr["number"], "title": pr["title"], "state": pr["state"], "head": pr["head"]["ref"], "base": pr["base"]["ref"], "draft": pr.get("draft"), "url": pr["html_url"]} for pr in d])
+    else:
+        out({"status": s, "error": d})
+
+def cmd_comment_issue(a, t):
+    s, d = api("POST", f"/repos/{a.repo}/issues/{a.number}/comments", t, {"body": a.body})
+    out({"status": s, "url": d.get("html_url"), "error": d.get("message")})
+
+def cmd_merge_pr(a, t):
+    if a.confirm != f"{a.repo}#{a.number}":
+        out({"ok": False, "error": "confirm must equal REPO#NUMBER exactly, e.g. OWNER/NAME#12"}); return
+    body = {"merge_method": a.method}
+    if a.commit_title:
+        body["commit_title"] = a.commit_title
+    s, d = api("PUT", f"/repos/{a.repo}/pulls/{a.number}/merge", t, body)
+    out({"status": s, "merged": d.get("merged"), "sha": d.get("sha"), "message": d.get("message")})
+
 def cmd_delete_repo(a, t):
     if a.confirm != a.repo:
         out({"ok": False, "error": "confirm must equal --repo exactly"}); return
@@ -363,6 +411,11 @@ def main():
     ll = sub.add_parser("library-list"); ll.add_argument("--query", default=""); ll.add_argument("--limit", type=int, default=50); ll.set_defaults(fn=cmd_library_list)
     la = sub.add_parser("library-add"); la.add_argument("--repo", required=True); la.add_argument("--url", default=None); la.add_argument("--desc", default=None); la.add_argument("--topics", default=""); la.add_argument("--private", action="store_true"); la.add_argument("--note", default=None); la.set_defaults(fn=cmd_library_add)
     lrm = sub.add_parser("library-remove"); lrm.add_argument("--repo", required=True); lrm.set_defaults(fn=cmd_library_remove)
+    cb = sub.add_parser("create-branch"); cb.add_argument("--repo", required=True); cb.add_argument("--name", required=True); cb.add_argument("--base", default=None); cb.set_defaults(fn=cmd_create_branch)
+    op = sub.add_parser("open-pr"); op.add_argument("--repo", required=True); op.add_argument("--head", required=True); op.add_argument("--base", default=None); op.add_argument("--title", required=True); op.add_argument("--body", default=""); op.add_argument("--draft", action="store_true"); op.set_defaults(fn=cmd_open_pr)
+    lp = sub.add_parser("list-prs"); lp.add_argument("--repo", required=True); lp.add_argument("--state", default="open", choices=["open", "closed", "all"]); lp.set_defaults(fn=cmd_list_prs)
+    cmi = sub.add_parser("comment-issue"); cmi.add_argument("--repo", required=True); cmi.add_argument("--number", required=True, type=int); cmi.add_argument("--body", required=True); cmi.set_defaults(fn=cmd_comment_issue)
+    mp = sub.add_parser("merge-pr"); mp.add_argument("--repo", required=True); mp.add_argument("--number", required=True, type=int); mp.add_argument("--method", default="merge", choices=["merge", "squash", "rebase"]); mp.add_argument("--commit-title", dest="commit_title", default=None); mp.add_argument("--confirm", required=True, help="must equal REPO#NUMBER"); mp.set_defaults(fn=cmd_merge_pr)
     dr = sub.add_parser("delete-repo"); dr.add_argument("--repo", required=True); dr.add_argument("--confirm", required=True); dr.set_defaults(fn=cmd_delete_repo)
     st = sub.add_parser("set-topics"); st.add_argument("--repo", required=True); st.add_argument("--topics", default=""); st.set_defaults(fn=cmd_set_topics)
     sm = sub.add_parser("set-meta"); sm.add_argument("--repo", required=True); sm.add_argument("--desc", default=""); sm.add_argument("--homepage", default=""); sm.set_defaults(fn=cmd_set_meta)
