@@ -98,3 +98,40 @@ Drop this folder into your OpenClaw `skills/` directory. The agent loads `SKILL.
 ## License
 
 MIT — free to use, fork, and share.
+
+## My Repo Library
+
+Published or curated repositories are remembered locally in:
+
+```text
+~/.config/tt-github/repos.json
+```
+
+Use it as a lightweight catalog of repos the agent has uploaded or managed:
+
+```bash
+python3 scripts/gh_manager.py library-list
+python3 scripts/gh_manager.py library-list --query openclaw
+python3 scripts/gh_manager.py library-add --repo OWNER/NAME --desc "Important repo" --topics openclaw,automation
+python3 scripts/gh_manager.py library-remove --repo OWNER/NAME
+```
+
+`create-repo`, `push`, and `update-repo` automatically save useful metadata to the library.
+
+## Repo metadata and topics
+
+```bash
+python3 scripts/gh_manager.py update-repo \
+  --repo OWNER/NAME \
+  --desc "Short repo pitch" \
+  --topics openclaw,ai-agent,automation \
+  --homepage https://github.com/OWNER/NAME
+```
+
+## Optional visual polish
+
+For public-facing repos, the agent should ask before creating images:
+
+> “Do you want me to generate a banner/logo/screenshot package before release?”
+
+Only after approval should it create assets such as `assets/banner.png`, `assets/logo.png`, or terminal screenshots. This keeps media generation intentional instead of automatic.

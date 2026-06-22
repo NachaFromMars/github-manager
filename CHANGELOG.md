@@ -7,6 +7,14 @@
 - Professional README: hero, why, features, quickstart, commands, safety model, workflows, install, roadmap.
 
 
+## v0.2.0 — 2026-06-22
+
+### Added
+- `update-repo` command for description, homepage, topics, and library sync.
+- My Repo Library commands: `library-list`, `library-add`, `library-remove`.
+- Automatic library save after `create-repo`, `push`, and `update-repo`.
+- Optional visual polish workflow: ask before generating banner/logo/screenshot assets.
+
 ## v0.1.0 — 2026-06-22
 
 ### Added
