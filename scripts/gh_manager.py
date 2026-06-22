@@ -11,7 +11,7 @@ Subcommands:
   whoami
   list-repos [--limit N]
   create-repo --name N [--desc D] [--private]
-  push --path DIR --repo OWNER/NAME [--branch main] [--message MSG] [--create] [--desc D] [--private]
+  push --path DIR --repo OWNER/NAME [--branch main] [--message MSG] [--create] [--desc D] [--private] [--method api|git]
   repo-info --repo OWNER/NAME
   create-issue --repo OWNER/NAME --title T [--body B]
   list-issues --repo OWNER/NAME [--state open|closed|all]
@@ -179,13 +179,40 @@ def cmd_create_repo(a, t):
 
 def cmd_repo_info(a, t):
     s, d = api("GET", f"/repos/{a.repo}", t)
+    if s == 200 and isinstance(d, dict):
+        topics = None
+        ts, td = api("GET", f"/repos/{a.repo}/topics", t)
+        if ts == 200 and isinstance(td, dict):
+            topics = td.get("names")
+        remember_repo(d.get("full_name"), url=d.get("html_url"), desc=d.get("description"), topics=topics, private=d.get("private"), note="synced from repo-info")
     out({"status": s, "full_name": d.get("full_name"), "url": d.get("html_url"),
          "default_branch": d.get("default_branch"), "stars": d.get("stargazers_count"),
-         "open_issues": d.get("open_issues_count"), "error": d.get("message")})
+         "open_issues": d.get("open_issues_count"), "library_saved": s == 200, "error": d.get("message")})
 
 
 def cmd_push(a, t):
+    """Push a folder to GitHub.
+
+    Default method is Contents API because it avoids putting the token into a git remote.
+    Use --method git only for legacy compatibility with large repos or exact git history needs.
+    """
     owner_repo = a.repo
+    if a.method == "api":
+        if a.create:
+            name = owner_repo.split("/")[-1]
+            api("POST", "/user/repos", t, {"name": name, "description": a.desc or "",
+                                           "private": bool(a.private), "has_issues": True})
+        pushed, failed = _push_via_api(a, t, owner_repo)
+        ok = not failed
+        if ok:
+            remember_repo(owner_repo, url=f"https://github.com/{owner_repo}", desc=a.desc or None,
+                          private=bool(a.private) if a.create else None, note="pushed via contents-api")
+        out({"pushed": ok, "repo": owner_repo, "branch": a.branch, "method": "api",
+             "files_pushed": len(pushed), "failed": failed, "library_saved": ok})
+        return
+
+    # Legacy/riskier fallback: git-over-HTTPS embeds the token in the temporary remote URL,
+    # then scrubs it after push. Prefer --method api or the publish command for normal use.
     if a.create:
         name = owner_repo.split("/")[-1]
         api("POST", "/user/repos", t, {"name": name, "description": a.desc or "",
@@ -206,15 +233,15 @@ def cmd_push(a, t):
     subprocess.run(["git", "-C", path, "remote", "add", "origin", remote], capture_output=True, text=True)
     p = subprocess.run(["git", "-C", path, "push", "-u", "origin", a.branch],
                        capture_output=True, text=True)
-    # scrub token from remote
     subprocess.run(["git", "-C", path, "remote", "set-url", "origin",
                     f"https://github.com/{owner_repo}.git"], capture_output=True, text=True)
     ok = p.returncode == 0
     if ok:
-        remember_repo(owner_repo, url=f"https://github.com/{owner_repo}", desc=a.desc or None, private=bool(a.private) if a.create else None, note="pushed")
-    out({"pushed": ok, "repo": owner_repo, "branch": a.branch,
+        remember_repo(owner_repo, url=f"https://github.com/{owner_repo}", desc=a.desc or None,
+                      private=bool(a.private) if a.create else None, note="pushed via legacy git")
+    out({"pushed": ok, "repo": owner_repo, "branch": a.branch, "method": "git-legacy",
+         "warning": "legacy git-over-HTTPS temporarily embeds token in remote; prefer --method api or publish",
          "detail": (p.stderr or p.stdout).strip().splitlines()[-3:] if not ok else "ok", "library_saved": ok})
-
 
 DEFAULT_TOPICS = ["openclaw", "ai-agent", "automation", "github", "developer-tools", "python"]
 
@@ -326,7 +353,7 @@ def main():
     lr = sub.add_parser("list-repos"); lr.add_argument("--limit", type=int, default=30); lr.set_defaults(fn=cmd_list_repos)
     cr = sub.add_parser("create-repo"); cr.add_argument("--name", required=True); cr.add_argument("--desc", default=""); cr.add_argument("--private", action="store_true"); cr.set_defaults(fn=cmd_create_repo)
     ri = sub.add_parser("repo-info"); ri.add_argument("--repo", required=True); ri.set_defaults(fn=cmd_repo_info)
-    pu = sub.add_parser("push"); pu.add_argument("--path", required=True); pu.add_argument("--repo", required=True); pu.add_argument("--branch", default="main"); pu.add_argument("--message", default="update"); pu.add_argument("--create", action="store_true"); pu.add_argument("--desc", default=""); pu.add_argument("--private", action="store_true"); pu.set_defaults(fn=cmd_push)
+    pu = sub.add_parser("push"); pu.add_argument("--path", required=True); pu.add_argument("--repo", required=True); pu.add_argument("--branch", default="main"); pu.add_argument("--message", default="update"); pu.add_argument("--create", action="store_true"); pu.add_argument("--desc", default=""); pu.add_argument("--private", action="store_true"); pu.add_argument("--method", choices=["api", "git"], default="api"); pu.set_defaults(fn=cmd_push)
     ci = sub.add_parser("create-issue"); ci.add_argument("--repo", required=True); ci.add_argument("--title", required=True); ci.add_argument("--body", default=""); ci.set_defaults(fn=cmd_create_issue)
     li = sub.add_parser("list-issues"); li.add_argument("--repo", required=True); li.add_argument("--state", default="open", choices=["open", "closed", "all"]); li.set_defaults(fn=cmd_list_issues)
     rel = sub.add_parser("create-release"); rel.add_argument("--repo", required=True); rel.add_argument("--tag", required=True); rel.add_argument("--name", required=True); rel.add_argument("--notes", default=""); rel.set_defaults(fn=cmd_create_release)
