@@ -1,0 +1,7 @@
+[project]
+name = "github-manager"
+version = "1.1.0"
+description = "Manage GitHub from an OpenClaw agent via REST API (no gh CLI). Create/push repos, issues, releases, and auto-polish repos."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
