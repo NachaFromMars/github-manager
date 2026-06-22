@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.4.0 — 2026-06-22 — Branch & PR Workflow
+
+### Added
+- `create-branch` — create a branch from a base (defaults to repo default branch).
+- `open-pr` — open a pull request (supports `--draft`).
+- `list-prs` — list pull requests by state.
+- `comment-issue` — comment on issues and pull requests.
+- `merge-pr` — guarded merge requiring `--confirm OWNER/NAME#NUMBER`; supports merge/squash/rebase.
+- `docs/pr-workflow.md` — branch & PR workflow guide.
+
+### Notes
+- Encourages PR-based collaboration over direct main pushes for shared repos.
+- Merge is guarded and should be confirmed by a human.
+
 ## v0.3.0 — 2026-06-22 — Public Trust Docs
 
 ### Added
