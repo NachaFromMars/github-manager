@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.2.2 — 2026-06-22
+
+### Changed
+- `push` now defaults to Contents API via `--method api`.
+- Legacy git-over-HTTPS push is explicitly gated behind `--method git` and warns about token exposure risk.
+- README now recommends `publish` as the normal polished shipping path.
+- `repo-info` now syncs successful lookups into My Repo Library.
+
+### Added
+- `docs/library.md` for My Repo Library behavior.
+- `docs/metadata.md` for public metadata vs local-only notes.
+- SKILL.md command docs for `update-repo` and library commands.
+- Clear docs that `--note` is local-only and never public on GitHub.
+
 ## v1.1.0 — Auto repo polish
 - Added one-shot `publish` (ensure repo -> push via Contents API -> set description -> set topics -> optional release).
 - Added `set-topics` and `set-meta` for discoverability.
