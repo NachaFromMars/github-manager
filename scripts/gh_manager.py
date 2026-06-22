@@ -294,6 +294,84 @@ def cmd_publish(a, t):
     out({"repo": repo, "url": f"https://github.com/{repo}", "failed": failed, "steps": steps})
 
 
+DEFAULT_TOPICS = ["openclaw", "ai-agent", "automation", "github", "developer-tools", "python"]
+
+
+def cmd_set_topics(a, t):
+    names = [x.strip().lower() for x in (a.topics.split(",") if a.topics else DEFAULT_TOPICS) if x.strip()]
+    s, d = api("PUT", f"/repos/{a.repo}/topics", t, {"names": names})
+    out({"status": s, "topics": d.get("names"), "error": d.get("message")})
+
+
+def cmd_set_meta(a, t):
+    body = {}
+    if a.desc:
+        body["description"] = a.desc
+    if a.homepage:
+        body["homepage"] = a.homepage
+    s, d = api("PATCH", f"/repos/{a.repo}", t, body)
+    out({"status": s, "description": d.get("description"), "homepage": d.get("homepage"), "error": d.get("message")})
+
+
+def _push_via_api(a, t, repo):
+    """Push every file in --path via the Contents API (robust vs. git-over-HTTPS auth)."""
+    import base64
+    root = a.path
+    pushed, failed = [], []
+    for dp, _dirs, fs in os.walk(root):
+        if any(seg in dp for seg in (".git", "__pycache__", ".pytest_cache")):
+            continue
+        for f in fs:
+            rel = os.path.relpath(os.path.join(dp, f), root).replace(os.sep, "/")
+            if rel.endswith(".pyc"):
+                continue
+            content = base64.b64encode(open(os.path.join(dp, f), "rb").read()).decode()
+            sg, dg = api("GET", f"/repos/{repo}/contents/{rel}", t)
+            body = {"message": a.message or f"publish {rel}", "content": content, "branch": a.branch}
+            if sg == 200 and isinstance(dg, dict) and dg.get("sha"):
+                body["sha"] = dg["sha"]
+            sp, dp2 = api("PUT", f"/repos/{repo}/contents/{rel}", t, body)
+            (pushed if sp < 400 else failed).append(rel)
+    return pushed, failed
+
+
+def cmd_publish(a, t):
+    """One-shot: optimize + publish a repo (the auto polish step).
+
+    Steps: ensure repo -> push files (Contents API) -> set description ->
+    set topics -> optional release. Each step is idempotent and reported.
+    """
+    repo = a.repo
+    steps = {}
+    # 1) ensure repo exists
+    s, d = api("GET", f"/repos/{repo}", t)
+    if s == 404 and a.create:
+        name = repo.split("/")[-1]
+        cs, cd = api("POST", "/user/repos", t, {"name": name, "description": a.desc or "", "private": bool(a.private), "has_issues": True})
+        steps["create"] = {"status": cs, "error": cd.get("message")}
+    else:
+        steps["create"] = {"status": s, "exists": s == 200}
+    # 2) push files
+    pushed, failed = _push_via_api(a, t, repo)
+    steps["push"] = {"pushed": len(pushed), "failed": failed}
+    # 3) description / homepage
+    if a.desc or a.homepage:
+        meta = {}
+        if a.desc: meta["description"] = a.desc
+        if a.homepage: meta["homepage"] = a.homepage
+        ms, md = api("PATCH", f"/repos/{repo}", t, meta)
+        steps["meta"] = {"status": ms, "description": md.get("description")}
+    # 4) topics
+    names = [x.strip().lower() for x in (a.topics.split(",") if a.topics else DEFAULT_TOPICS) if x.strip()]
+    ts, td = api("PUT", f"/repos/{repo}/topics", t, {"names": names})
+    steps["topics"] = {"status": ts, "topics": td.get("names")}
+    # 5) optional release
+    if a.tag:
+        rs, rd = api("POST", f"/repos/{repo}/releases", t, {"tag_name": a.tag, "name": a.release_name or a.tag, "body": a.notes or ""})
+        steps["release"] = {"status": rs, "url": rd.get("html_url"), "error": rd.get("message")}
+    out({"repo": repo, "url": f"https://github.com/{repo}", "failed": failed, "steps": steps})
+
+
 def cmd_create_issue(a, t):
     s, d = api("POST", f"/repos/{a.repo}/issues", t, {"title": a.title, "body": a.body or ""})
     out({"status": s, "number": d.get("number"), "url": d.get("html_url"), "error": d.get("message")})
