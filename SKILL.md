@@ -103,3 +103,18 @@ python3 $S library-remove --repo OWNER/NAME
 Library path: `~/.config/tt-github/repos.json`.
 
 Auto-sync commands: `create-repo`, `push`, `publish`, `update-repo`, successful `repo-info`.
+
+## Branch & PR workflow (v0.4.0)
+
+For shared/important repos, prefer pull requests over direct main pushes.
+
+```bash
+python3 $S create-branch --repo OWNER/NAME --name feature/x [--base main]
+python3 $S push --path <dir> --repo OWNER/NAME --branch feature/x --method api
+python3 $S open-pr --repo OWNER/NAME --head feature/x --title "..." [--base main] [--body "..."] [--draft]
+python3 $S list-prs --repo OWNER/NAME --state open
+python3 $S comment-issue --repo OWNER/NAME --number 12 --body "..."
+python3 $S merge-pr --repo OWNER/NAME --number 12 --method squash --confirm OWNER/NAME#12
+```
+
+`merge-pr` is guarded: `--confirm` must equal `OWNER/NAME#NUMBER` exactly. Do not auto-merge into main without explicit human confirmation. See `docs/pr-workflow.md`.
