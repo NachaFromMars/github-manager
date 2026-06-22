@@ -183,3 +183,19 @@ Guarded destructive command. `--confirm` must equal `--repo` exactly.
 ```bash
 python3 scripts/gh_manager.py delete-repo --repo OWNER/NAME --confirm OWNER/NAME
 ```
+
+---
+
+## create-branch / open-pr / list-prs / comment-issue / merge-pr
+
+Branch & PR workflow (v0.4.0). See [`pr-workflow.md`](pr-workflow.md).
+
+```bash
+python3 scripts/gh_manager.py create-branch --repo OWNER/NAME --name feature/x --base main
+python3 scripts/gh_manager.py open-pr --repo OWNER/NAME --head feature/x --base main --title "..." --body "..." --draft
+python3 scripts/gh_manager.py list-prs --repo OWNER/NAME --state open
+python3 scripts/gh_manager.py comment-issue --repo OWNER/NAME --number 12 --body "..."
+python3 scripts/gh_manager.py merge-pr --repo OWNER/NAME --number 12 --method squash --confirm OWNER/NAME#12
+```
+
+`merge-pr` requires `--confirm OWNER/NAME#NUMBER` to match exactly.
