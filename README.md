@@ -99,6 +99,23 @@ Drop this folder into your OpenClaw `skills/` directory. The agent loads `SKILL.
 
 MIT — free to use, fork, and share.
 
+
+
+## Recommended publishing path
+
+Use `publish` for normal repo shipping. It uses the GitHub Contents API, then sets description, topics, homepage, and optional release metadata in one flow.
+
+```bash
+python3 scripts/gh_manager.py publish   --path ./my-skill   --repo OWNER/my-skill   --create   --desc "Short public pitch"   --topics openclaw,ai-agent,automation   --tag v0.1.0   --notes "Initial release"
+```
+
+`push` now defaults to `--method api` and is safe for ordinary folder publishing. The legacy git-over-HTTPS path is still available as `push --method git`, but it is riskier because it temporarily embeds the token in the remote URL before scrubbing it. Prefer `publish` or `push --method api`.
+
+See also:
+
+- [`docs/library.md`](docs/library.md)
+- [`docs/metadata.md`](docs/metadata.md)
+
 ## My Repo Library
 
 Published or curated repositories are remembered locally in:
@@ -116,7 +133,7 @@ python3 scripts/gh_manager.py library-add --repo OWNER/NAME --desc "Important re
 python3 scripts/gh_manager.py library-remove --repo OWNER/NAME
 ```
 
-`create-repo`, `push`, and `update-repo` automatically save useful metadata to the library.
+`create-repo`, `push`, `publish`, `update-repo`, and successful `repo-info` calls automatically save useful metadata to the library. `--note` is local-only and is never sent to GitHub.
 
 ## Repo metadata and topics
 
