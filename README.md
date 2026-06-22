@@ -96,6 +96,21 @@ Drop this folder into your OpenClaw `skills/` directory. The agent loads `SKILL.
 - Multi-repo batch publish.
 
 
+## Branch & PR workflow
+
+Prefer pull requests over direct main pushes for shared repos:
+
+```bash
+python3 scripts/gh_manager.py create-branch --repo OWNER/NAME --name feature/x --base main
+python3 scripts/gh_manager.py push --path ./dir --repo OWNER/NAME --branch feature/x --method api
+python3 scripts/gh_manager.py open-pr --repo OWNER/NAME --head feature/x --title "Add x" --body "why"
+python3 scripts/gh_manager.py list-prs --repo OWNER/NAME --state open
+python3 scripts/gh_manager.py comment-issue --repo OWNER/NAME --number 12 --body "LGTM"
+python3 scripts/gh_manager.py merge-pr --repo OWNER/NAME --number 12 --method squash --confirm OWNER/NAME#12
+```
+
+`merge-pr` is guarded (`--confirm OWNER/NAME#NUMBER`). Do not auto-merge into main without human confirmation.
+
 ## Documentation
 
 - [`docs/commands.md`](docs/commands.md) — full CLI reference
@@ -103,6 +118,7 @@ Drop this folder into your OpenClaw `skills/` directory. The agent loads `SKILL.
 - [`docs/openclaw-integration.md`](docs/openclaw-integration.md) — install, triggers, agent workflow
 - [`docs/library.md`](docs/library.md) — My Repo Library
 - [`docs/metadata.md`](docs/metadata.md) — public metadata vs local-only notes
+- [`docs/pr-workflow.md`](docs/pr-workflow.md) — branch & pull request workflow
 - [`docs/troubleshooting.md`](docs/troubleshooting.md) — common errors and fixes
 - [`SECURITY.md`](SECURITY.md) — security policy
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guide
