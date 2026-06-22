@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.3 — 2026-06-22
+
+### Fixed
+- `publish` now explicitly saves the repo into My Repo Library after successful publish metadata sync.
+
 ## v0.2.2 — 2026-06-22
 
 ### Changed
