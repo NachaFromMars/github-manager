@@ -318,7 +318,9 @@ def cmd_publish(a, t):
     if a.tag:
         rs, rd = api("POST", f"/repos/{repo}/releases", t, {"tag_name": a.tag, "name": a.release_name or a.tag, "body": a.notes or ""})
         steps["release"] = {"status": rs, "url": rd.get("html_url"), "error": rd.get("message")}
-    out({"repo": repo, "url": f"https://github.com/{repo}", "failed": failed, "steps": steps})
+    remember_repo(repo, url=f"https://github.com/{repo}", desc=a.desc or None,
+                  topics=names, private=bool(a.private) if a.create else None, note="published")
+    out({"repo": repo, "url": f"https://github.com/{repo}", "failed": failed, "steps": steps, "library_saved": True})
 
 def cmd_create_issue(a, t):
     s, d = api("POST", f"/repos/{a.repo}/issues", t, {"title": a.title, "body": a.body or ""})
