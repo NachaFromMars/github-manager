@@ -95,6 +95,18 @@ Drop this folder into your OpenClaw `skills/` directory. The agent loads `SKILL.
 - Branch protection + PR-based publish option.
 - Multi-repo batch publish.
 
+
+## Documentation
+
+- [`docs/commands.md`](docs/commands.md) — full CLI reference
+- [`docs/token-setup.md`](docs/token-setup.md) — PAT permissions and auth errors
+- [`docs/openclaw-integration.md`](docs/openclaw-integration.md) — install, triggers, agent workflow
+- [`docs/library.md`](docs/library.md) — My Repo Library
+- [`docs/metadata.md`](docs/metadata.md) — public metadata vs local-only notes
+- [`docs/troubleshooting.md`](docs/troubleshooting.md) — common errors and fixes
+- [`SECURITY.md`](SECURITY.md) — security policy
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guide
+
 ## License
 
 MIT — free to use, fork, and share.
