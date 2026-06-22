@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.0 — Auto repo polish
+- Added one-shot `publish` (ensure repo -> push via Contents API -> set description -> set topics -> optional release).
+- Added `set-topics` and `set-meta` for discoverability.
+- Push uses the REST Contents API (robust vs restricted git-over-HTTPS auth).
+- Professional README: hero, why, features, quickstart, commands, safety model, workflows, install, roadmap.
+
+
 ## v0.1.0 — 2026-06-22
 
 ### Added
